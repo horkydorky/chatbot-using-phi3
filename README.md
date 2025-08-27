@@ -17,7 +17,7 @@ It connects to [Ollama] to stream chat responses from a local LLM (default: `phi
 - Python 3.9+  
 - installed and running locally  
 - `phi3` (or another Ollama model like `mistral`, `tinyllama`, etc.
-- I tried mistral,tinyllama but it worked comparatively better using phi3)  
+- I tried mistral and tinyllama but it worked comparatively better using phi3
 
 
 ## Installation

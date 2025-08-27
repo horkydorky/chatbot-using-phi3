@@ -1,9 +1,8 @@
 # FastAPI Chat with Ollama (phi3)
 
-This project is a simple **chat backend** built with [FastAPI](https://fastapi.tiangolo.com/).  
-It connects to [Ollama](https://ollama.ai/) to stream chat responses from a local LLM (default: `phi3`).  
+This project is a simple **chat backend** built with [FastAPI] 
+It connects to [Ollama] to stream chat responses from a local LLM (default: `phi3`).  
 
----
 
 ## Features
 
@@ -12,7 +11,6 @@ It connects to [Ollama](https://ollama.ai/) to stream chat responses from a loca
 - `/chat` endpoint proxies chat messages to **Ollama**  
 - Streams responses back in real time  
 
----
 
 ## Requirements
 
@@ -21,7 +19,6 @@ It connects to [Ollama](https://ollama.ai/) to stream chat responses from a loca
 - `phi3` (or another Ollama model like `mistral`, `tinyllama`, etc.
 - I tried mistral,tinyllama but it worked comparatively better using phi3)  
 
----
 
 ## Installation
 
@@ -48,17 +45,13 @@ uvicorn main:app --reload
 
 
 By default, it runs at:
-👉 http://127.0.0.1:8000/
+http://127.0.0.1:8000/
 
 API Endpoints
 GET /
-
 Serves the index.html file (chat UI).
-
 POST /chat
-
 Streams responses from the Ollama model.
-
 Request body:
 
 {

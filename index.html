@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Chatbot (Streaming)</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f4f9; }
+        h1 { text-align: center; color: #333; }
+        #chat-window { border: 1px solid #ccc; height: 500px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background-color: #fff; border-radius: 8px; }
+        .message { margin-bottom: 15px; padding: 10px; border-radius: 10px; max-width: 80%; line-height: 1.5; }
+        .user { background-color: #dcf8c6; align-self: flex-end; margin-left: auto; }
+        .bot { background-color: #f1f0f0; align-self: flex-start; }
+        .message-container { display: flex; flex-direction: column; }
+        #chat-input { display: flex; }
+        #message-input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px; }
+        button:hover { background-color: #0056b3; }
+        .typing-indicator { color: #999; font-style: italic; align-self: flex-start; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <h1>The Grand Ollama Hotel </h1>
+    <div id="chat-window" class="message-container"></div>
+    <div id="chat-input">
+        <input type="text" id="message-input" placeholder="Ask a question...">
+        <button id="send-button" onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        const hotelKnowledge = `
+            **Check-in / Check-out:** Check-in is 3 PM, Check-out is 11 AM.
+            **Amenities:** Free Wi-Fi (Network: GrandOllamaGuest, Pass: welcome123), Pool & Fitness Center (6 AM - 10 PM).
+            **Policies:** Pet-friendly ($75 fee). 100% non-smoking.
+        `;
+
+        let conversationHistory = [{
+            role: 'system',
+            content:  `You are a helpful and friendly concierge for 'The Grand Ollama Hotel'.
+           Keep your answers concise and to the point.
+          Strictly follow these rules:
+          1. Use ONLY the information in the provided context to answer questions.
+          2. If the answer is not in the context, you MUST reply with exactly this sentence: "I'm sorry, I don't have that information. You can reach the front desk at 555-123-4567 for more help."
+
+          Here is the context you must use:\n${hotelKnowledge}`
+        }];
+
+        async function sendMessage() {
+            const userMessage = messageInput.value;
+            if (!userMessage.trim()) return;
+
+            // Disable input while bot is replying
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+
+            conversationHistory.push({ role: 'user', content: userMessage });
+            appendMessage(userMessage, 'user');
+            messageInput.value = '';
+
+            // --- STREAMING FETCH REQUEST ---
+            try {
+                const response = await fetch('http://127.0.0.1:8000/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ history: conversationHistory })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Prepare to display the bot's streamed response
+                const botMessageElement = appendMessage('', 'bot'); // Create an empty message bubble for the bot
+                let botReply = '';
+
+                // Use the ReadableStream API to process the response
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    botReply += chunk;
+                    botMessageElement.innerText = botReply; // Update the content in real-time
+                    chatWindow.scrollTop = chatWindow.scrollHeight; // Keep scrolled to the bottom
+                }
+
+                // Add the final complete response to the history
+                conversationHistory.push({ role: 'assistant', content: botReply });
+
+            } catch (error) {
+                console.error('Error:', error);
+                appendMessage('Sorry, something went wrong. Please try again.', 'bot');
+            } finally {
+                // Re-enable input
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        function appendMessage(text, className) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', className);
+            messageElement.innerText = text;
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            return messageElement; // Return the element so we can update it
+        }
+
+        messageInput.addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
